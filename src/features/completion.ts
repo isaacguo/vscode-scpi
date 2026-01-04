@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import { ParserService } from '../parser';
 import { COMMON_COMMANDS, ROOT_COMMANDS, ScpiCommand } from '../scpi';
-import { SyntaxNode } from 'web-tree-sitter';
 
 export class ScpiCompletionItemProvider implements vscode.CompletionItemProvider {
     public provideCompletionItems(
@@ -12,9 +11,6 @@ export class ScpiCompletionItemProvider implements vscode.CompletionItemProvider
         if (!tree) {
             return [];
         }
-
-        const point = { row: position.line, column: position.character };
-        const node = tree.rootNode.descendantForPosition(point);
 
         const items: vscode.CompletionItem[] = [];
 

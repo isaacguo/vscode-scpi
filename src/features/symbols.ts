@@ -5,7 +5,7 @@ import { SyntaxNode } from 'web-tree-sitter';
 export class ScpiDocumentSymbolProvider implements vscode.DocumentSymbolProvider {
     public provideDocumentSymbols(
         document: vscode.TextDocument,
-        token: vscode.CancellationToken
+        _token: vscode.CancellationToken
     ): vscode.ProviderResult<vscode.DocumentSymbol[] | vscode.SymbolInformation[]> {
         const tree = ParserService.getInstance().getTree(document);
         if (!tree) {

@@ -1,8 +1,16 @@
 import * as vscode from 'vscode';
 import { ParserService } from '../parser';
+import * as Parser from 'web-tree-sitter';
+
+export interface ScpiContext {
+    currentNodeType: string;
+    currentNodeText: string;
+    commandPath: string;
+    position: vscode.Position;
+}
 
 export class ScpiAIContext {
-    public static getContextAtCursor(document: vscode.TextDocument, position: vscode.Position): any {
+    public static getContextAtCursor(document: vscode.TextDocument, position: vscode.Position): ScpiContext | null {
         const tree = ParserService.getInstance().getTree(document);
         if (!tree) {
             return null;
@@ -12,7 +20,7 @@ export class ScpiAIContext {
         const node = tree.rootNode.descendantForPosition(point);
 
         // Walk up to find the command context
-        let currentNode: any = node;
+        let currentNode: Parser.SyntaxNode | null = node;
         const contextPath: string[] = [];
         
         while (currentNode) {
