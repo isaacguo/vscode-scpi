@@ -1,0 +1,63 @@
+{
+  "name": "vscode-scpi",
+  "displayName": "SCPI Language Support",
+  "description": "Language support for SCPI (Standard Commands for Programmable Instruments) using Tree-sitter",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.96.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:scpi"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "scpi",
+        "aliases": [
+          "SCPI",
+          "scpi"
+        ],
+        "extensions": [
+          ".scpi"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "commands": [
+        {
+            "command": "scpi.getAIContext",
+            "title": "Get SCPI AI Context"
+        }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.96.0",
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "20.x",
+    "@typescript-eslint/eslint-plugin": "^7.0.2",
+    "@typescript-eslint/parser": "^7.0.2",
+    "eslint": "^8.56.0",
+    "glob": "^8.1.0",
+    "mocha": "^10.3.0",
+    "typescript": "^5.3.3",
+    "@vscode/test-electron": "^2.3.9"
+  },
+  "dependencies": {
+    "web-tree-sitter": "^0.20.8",
+    "tree-sitter-scpi": "latest"
+  }
+}
+
