@@ -27,6 +27,13 @@
         "configuration": "./language-configuration.json"
       }
     ],
+    "grammars": [
+      {
+        "language": "scpi",
+        "scopeName": "source.scpi",
+        "path": "./syntaxes/scpi.tmLanguage.json"
+      }
+    ],
     "commands": [
         {
             "command": "scpi.getAIContext",

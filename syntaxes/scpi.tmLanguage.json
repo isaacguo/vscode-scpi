@@ -1,0 +1,101 @@
+{
+    "scopeName": "source.scpi",
+    "patterns": [
+        {
+            "include": "#comments"
+        },
+        {
+            "include": "#strings"
+        },
+        {
+            "include": "#numbers"
+        },
+        {
+            "include": "#keywords"
+        },
+        {
+            "include": "#commands"
+        }
+    ],
+    "repository": {
+        "comments": {
+            "patterns": [
+                {
+                    "name": "comment.line.double-slash.scpi",
+                    "match": "//.*$"
+                }
+            ]
+        },
+        "strings": {
+            "patterns": [
+                {
+                    "name": "string.quoted.double.scpi",
+                    "begin": "\"",
+                    "end": "\"",
+                    "patterns": [
+                        {
+                            "name": "constant.character.escape.scpi",
+                            "match": "\\\\."
+                        }
+                    ]
+                },
+                {
+                    "name": "string.quoted.single.scpi",
+                    "begin": "'",
+                    "end": "'",
+                    "patterns": [
+                        {
+                            "name": "constant.character.escape.scpi",
+                            "match": "\\\\."
+                        }
+                    ]
+                }
+            ]
+        },
+        "numbers": {
+            "patterns": [
+                {
+                    "name": "constant.numeric.hex.scpi",
+                    "match": "#H[0-9a-fA-F]+"
+                },
+                {
+                    "name": "constant.numeric.octal.scpi",
+                    "match": "#Q[0-7]+"
+                },
+                {
+                    "name": "constant.numeric.binary.scpi",
+                    "match": "#B[01]+"
+                },
+                {
+                    "name": "constant.numeric.decimal.scpi",
+                    "match": "[-+]?([0-9]*\\.[0-9]+|[0-9]+)([eE][-+]?[0-9]+)?"
+                }
+            ]
+        },
+        "keywords": {
+            "patterns": [
+                {
+                    "name": "constant.language.boolean.scpi",
+                    "match": "\\b(ON|OFF)\\b"
+                }
+            ]
+        },
+        "commands": {
+            "patterns": [
+                {
+                    "name": "keyword.control.common.scpi",
+                    "match": "\\*[a-zA-Z][a-zA-Z0-9_]*\\??"
+                },
+                {
+                    "name": "keyword.other.scpi",
+                    "match": ":?[a-zA-Z][a-zA-Z0-9_]*"
+                },
+                {
+                    "name": "keyword.operator.query.scpi",
+                    "match": "\\?"
+                }
+            ]
+        }
+    }
+}
+
