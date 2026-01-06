@@ -2,9 +2,10 @@
 
 A comprehensive development and execution environment for SCPI (Standard Commands for Programmable Instruments) in VS Code.
 
-<img src="assets/demo.jpg" alt="SCPI Notebook Demo" width="800"/>
-
 ## Features
+
+![ Demo ](assets/demo.jpg)
+![ features ](images/scpi.gif)
 
 ### Language Support
 - **Syntax Highlighting** - Full syntax highlighting for SCPI commands using Tree-sitter parser
