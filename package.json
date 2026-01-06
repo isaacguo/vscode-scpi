@@ -3,14 +3,17 @@
   "displayName": "SCPI Language Support",
   "description": "Language support for SCPI (Standard Commands for Programmable Instruments) using Tree-sitter",
   "version": "0.0.1",
+  "publisher": "isaacguo",
   "engines": {
     "vscode": "^1.96.0"
   },
   "categories": [
-    "Programming Languages"
+    "Programming Languages",
+    "Notebooks"
   ],
   "activationEvents": [
-    "onLanguage:scpi"
+    "onLanguage:scpi",
+    "onNotebook:scpi-notebook"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -34,12 +37,47 @@
         "path": "./syntaxes/scpi.tmLanguage.json"
       }
     ],
-    "commands": [
-        {
-            "command": "scpi.getAIContext",
-            "title": "Get SCPI AI Context"
+    "configuration": {
+      "title": "SCPI",
+      "properties": {
+        "scpi.pythonPath": {
+          "type": "string",
+          "default": "python",
+          "description": "Path to the Python interpreter with pyvisa installed."
         }
-    ]
+      }
+    },
+    "commands": [
+      {
+        "command": "scpi.getAIContext",
+        "title": "Get SCPI AI Context"
+      },
+      {
+        "command": "scpi.configureConnection",
+        "title": "Configure Instrument Connection",
+        "category": "SCPI"
+      }
+    ],
+    "notebooks": [
+      {
+        "type": "scpi-notebook",
+        "displayName": "SCPI Notebook",
+        "selector": [
+          {
+            "filenamePattern": "*.scpi"
+          }
+        ]
+      }
+    ],
+    "menus": {
+      "notebook/toolbar": [
+        {
+          "command": "scpi.configureConnection",
+          "when": "notebookType == scpi-notebook",
+          "group": "navigation"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
