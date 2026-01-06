@@ -39,6 +39,7 @@ export class ScpiNotebookController {
         execution.executionOrder = ++this._executionOrder;
         execution.start(Date.now());
 
+        // Check for connection config
         const config = ConnectionService.getConnectionConfig(notebook);
         if (!config || !config.resourceName) {
             execution.replaceOutput([
@@ -50,13 +51,46 @@ export class ScpiNotebookController {
             return;
         }
 
+        // Check for Python environment - prompt on first execution if missing
+        let pythonEnv = ConnectionService.getPythonEnvironment(notebook);
+        if (!pythonEnv || !pythonEnv.path) {
+            // Prompt user to select Python environment
+            const userChoice = await vscode.window.showWarningMessage(
+                'Python environment not configured. Please select a Python environment to execute SCPI commands.',
+                'Select Python Environment',
+                'Cancel'
+            );
+
+            if (userChoice === 'Select Python Environment') {
+                await ConnectionService.configurePythonEnvironment(notebook);
+                pythonEnv = ConnectionService.getPythonEnvironment(notebook);
+            }
+
+            if (!pythonEnv || !pythonEnv.path) {
+                execution.replaceOutput([
+                    new vscode.NotebookCellOutput([
+                        vscode.NotebookCellOutputItem.error(new Error('Python environment not configured. Please configure Python environment first using "Configure Python Environment" command.'))
+                    ])
+                ]);
+                execution.end(false, Date.now());
+                return;
+            }
+        }
+
         try {
             // Path to python script
             const scriptPath = path.join(this._context.extensionPath, 'python', 'visa_adapter.py');
-            // Assuming python is in PATH. In real app, allow configuration.
-            const pythonPath = vscode.workspace.getConfiguration('scpi').get<string>('pythonPath') || 'python';
+            // Use Python path from notebook metadata, fallback to global config
+            const pythonPath = pythonEnv.path || vscode.workspace.getConfiguration('scpi').get<string>('pythonPath') || 'python';
 
-            const output = await this._runPythonScript(pythonPath, scriptPath, config.resourceName, cell.document.getText(), execution.token);
+            const output = await this._runPythonScript(
+                pythonPath, 
+                scriptPath, 
+                config.resourceName, 
+                cell.document.getText(), 
+                execution.token,
+                config.isSimulation || false
+            );
             
             execution.replaceOutput([
                 new vscode.NotebookCellOutput([
@@ -74,9 +108,13 @@ export class ScpiNotebookController {
         }
     }
 
-    private _runPythonScript(python: string, script: string, resource: string, commands: string, token: vscode.CancellationToken): Promise<string> {
+    private _runPythonScript(python: string, script: string, resource: string, commands: string, token: vscode.CancellationToken, useSimulation: boolean = false): Promise<string> {
         return new Promise((resolve, reject) => {
-            const process = cp.spawn(python, [script, resource]);
+            const args = [script, resource];
+            if (useSimulation) {
+                args.push('--sim');
+            }
+            const process = cp.spawn(python, args);
             
             const cancelDisposable = token.onCancellationRequested(() => {
                 process.kill();

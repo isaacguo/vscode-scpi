@@ -25,7 +25,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // Register Connection Command
     context.subscriptions.push(
-        vscode.commands.registerCommand('scpi.configureConnection', async (notebook: vscode.NotebookDocument) => {
+        vscode.commands.registerCommand('scpi.configureConnection', async (notebook?: vscode.NotebookDocument) => {
              if (!notebook) {
                  const editor = vscode.window.activeNotebookEditor;
                  if (editor && editor.notebook.notebookType === 'scpi-notebook') {
@@ -34,7 +34,46 @@ export async function activate(context: vscode.ExtensionContext) {
              }
              
              if (notebook) {
-                 await ConnectionService.configureConnection(notebook);
+                 // Validate notebook has URI
+                 if (!notebook.uri) {
+                     // Try to get notebook from workspace
+                     const editor = vscode.window.activeNotebookEditor;
+                     if (editor && editor.notebook.uri && editor.notebook.notebookType === 'scpi-notebook') {
+                         notebook = editor.notebook;
+                     } else {
+                         vscode.window.showErrorMessage('Invalid notebook: missing URI. Please ensure the notebook is properly opened.');
+                         return;
+                     }
+                 }
+                 try {
+                     await ConnectionService.configureConnection(notebook);
+                 } catch (err: any) {
+                     console.error('Error in configureConnection:', err);
+                     vscode.window.showErrorMessage(`Failed to configure instrument connection: ${err}`);
+                 }
+             } else {
+                 vscode.window.showErrorMessage('No active SCPI notebook found.');
+             }
+        })
+    );
+
+    // Register Python Environment Command
+    context.subscriptions.push(
+        vscode.commands.registerCommand('scpi.configurePythonEnvironment', async (notebook?: vscode.NotebookDocument) => {
+             if (!notebook) {
+                 const editor = vscode.window.activeNotebookEditor;
+                 if (editor && editor.notebook.notebookType === 'scpi-notebook') {
+                     notebook = editor.notebook;
+                 }
+             }
+             
+             if (notebook) {
+                 try {
+                     await ConnectionService.configurePythonEnvironment(notebook);
+                 } catch (err: any) {
+                     console.error('Error in configurePythonEnvironment:', err);
+                     vscode.window.showErrorMessage(`Failed to configure Python environment: ${err}`);
+                 }
              } else {
                  vscode.window.showErrorMessage('No active SCPI notebook found.');
              }

@@ -11,10 +11,15 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('resource', help='VISA resource name')
     parser.add_argument('--timeout', type=int, default=5000, help='Timeout in ms')
+    parser.add_argument('--sim', action='store_true', help='Use pyvisa-sim backend')
     args = parser.parse_args()
 
     try:
-        rm = pyvisa.ResourceManager()
+        # Use @sim backend if simulation mode is enabled
+        if args.sim:
+            rm = pyvisa.ResourceManager('@sim')
+        else:
+            rm = pyvisa.ResourceManager()
         # Open resource
         inst = rm.open_resource(args.resource)
         inst.timeout = args.timeout

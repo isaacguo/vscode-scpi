@@ -25,7 +25,7 @@
           "scpi"
         ],
         "extensions": [
-          ".scpi"
+          ".scpinb"
         ],
         "configuration": "./language-configuration.json"
       }
@@ -56,6 +56,11 @@
         "command": "scpi.configureConnection",
         "title": "Configure Instrument Connection",
         "category": "SCPI"
+      },
+      {
+        "command": "scpi.configurePythonEnvironment",
+        "title": "Configure Python Environment",
+        "category": "SCPI"
       }
     ],
     "notebooks": [
@@ -64,7 +69,7 @@
         "displayName": "SCPI Notebook",
         "selector": [
           {
-            "filenamePattern": "*.scpi"
+            "filenamePattern": "*.scpinb"
           }
         ]
       }
@@ -73,6 +78,11 @@
       "notebook/toolbar": [
         {
           "command": "scpi.configureConnection",
+          "when": "notebookType == scpi-notebook",
+          "group": "navigation"
+        },
+        {
+          "command": "scpi.configurePythonEnvironment",
           "when": "notebookType == scpi-notebook",
           "group": "navigation"
         }
