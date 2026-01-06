@@ -1,0 +1,11 @@
+{
+  "iconDefinitions": {
+    "scpi-file": {
+      "iconPath": "./scpi-file-icon.svg"
+    }
+  },
+  "fileExtensions": {
+    "scpinb": "scpi-file"
+  }
+}
+

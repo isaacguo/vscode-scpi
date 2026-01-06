@@ -1,9 +1,14 @@
 {
   "name": "vscode-scpi",
-  "displayName": "SCPI Language Support",
-  "description": "Language support for SCPI (Standard Commands for Programmable Instruments) using Tree-sitter",
+  "displayName": "SCPI Notebook",
+  "description": "A notebook development and execution environment for SCPI (Standard Commands for Programmable Instruments)",
   "version": "0.0.1",
   "publisher": "isaacguo",
+  "icon": "assets/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/isaacguo/vscode-scpi.git"
+  },
   "engines": {
     "vscode": "^1.96.0"
   },
@@ -74,6 +79,13 @@
         ]
       }
     ],
+    "iconThemes": [
+      {
+        "id": "scpi-file-icons",
+        "label": "SCPI File Icons",
+        "path": "./assets/scpi-icon-theme.json"
+      }
+    ],
     "menus": {
       "notebook/toolbar": [
         {
@@ -98,21 +110,22 @@
     "test": "node ./out/test/runTest.js"
   },
   "devDependencies": {
-    "@types/vscode": "^1.96.0",
+    "@resvg/resvg-js": "^2.6.2",
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.6",
     "@types/node": "20.x",
+    "@types/vscode": "^1.96.0",
     "@typescript-eslint/eslint-plugin": "^7.0.2",
     "@typescript-eslint/parser": "^7.0.2",
+    "@vscode/test-electron": "^2.3.9",
     "eslint": "^8.56.0",
     "glob": "^8.1.0",
     "mocha": "^10.3.0",
-    "typescript": "^5.3.3",
-    "@vscode/test-electron": "^2.3.9"
+    "sharp": "^0.34.5",
+    "typescript": "^5.3.3"
   },
   "dependencies": {
-    "web-tree-sitter": "^0.20.8",
-    "tree-sitter-scpi": "latest"
+    "tree-sitter-scpi": "latest",
+    "web-tree-sitter": "^0.20.8"
   }
 }
-

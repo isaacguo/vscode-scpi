@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <!-- Notebook base -->
+  <rect x="2" y="2" width="12" height="12" rx="1" fill="#4A90E2" opacity="0.2"/>
+  <rect x="2" y="2" width="12" height="12" rx="1" fill="none" stroke="#4A90E2" stroke-width="1.5"/>
+  
+  <!-- Notebook binding (left side) -->
+  <rect x="2" y="2" width="2" height="12" fill="#4A90E2"/>
+  
+  <!-- Lines representing notebook pages -->
+  <line x1="5" y1="5" x2="12" y2="5" stroke="#4A90E2" stroke-width="0.8" opacity="0.6"/>
+  <line x1="5" y1="7" x2="12" y2="7" stroke="#4A90E2" stroke-width="0.8" opacity="0.6"/>
+  <line x1="5" y1="9" x2="12" y2="9" stroke="#4A90E2" stroke-width="0.8" opacity="0.6"/>
+  
+  <!-- SCPI indicator (small wave/signal symbol) -->
+  <path d="M 6 11 Q 7 10, 8 11 T 10 11" stroke="#4A90E2" stroke-width="1.2" fill="none"/>
+</svg>
+
