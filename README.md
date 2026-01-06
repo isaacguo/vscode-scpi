@@ -4,8 +4,7 @@ A comprehensive development and execution environment for SCPI (Standard Command
 
 ## Features
 
-![ Demo ](assets/demo.jpg)
-![ features ](images/scpi.gif)
+![ Demo ](assets/scpi.gif)
 
 ### Language Support
 - **Syntax Highlighting** - Full syntax highlighting for SCPI commands using Tree-sitter parser
