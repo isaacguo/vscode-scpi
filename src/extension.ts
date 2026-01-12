@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { ParserService } from './parser';
 import { ScpiCompletionItemProvider } from './features/completion';
 import { ScpiDiagnostics } from './features/diagnostics';
@@ -7,9 +8,15 @@ import { ScpiAIContext } from './ai/context';
 import { ScpiNotebookSerializer } from './notebook/serializer';
 import { ScpiNotebookController } from './notebook/controller';
 import { ConnectionService } from './notebook/connection';
+import { McpServerManager } from './mcp/server-manager';
 
 export async function activate(context: vscode.ExtensionContext) {
     console.log('SCPI extension is now active!');
+
+    // Initialize MCP Server Manager
+    const mcpServerManager = new McpServerManager(context);
+    await mcpServerManager.initialize();
+    context.subscriptions.push(mcpServerManager);
 
     // Register Notebook Serializer - REGISTER FIRST to avoid race conditions
     context.subscriptions.push(
@@ -107,6 +114,49 @@ export async function activate(context: vscode.ExtensionContext) {
                 return context;
             }
             return null;
+        })
+    );
+
+    // Register Setup MCP Server Command
+    context.subscriptions.push(
+        vscode.commands.registerCommand('scpi.setupMcpServer', async () => {
+            // 1. Select Manual Directory
+            const currentDir = vscode.workspace.getConfiguration('scpi').get<string>('manualDirectory', '.scpi');
+            
+            const selection = await vscode.window.showOpenDialog({
+                canSelectFiles: false,
+                canSelectFolders: true,
+                canSelectMany: false,
+                openLabel: 'Select Manual Directory',
+                title: 'Select Directory for SCPI Manuals'
+            });
+
+            if (selection && selection.length > 0) {
+                const selectedPath = selection[0].fsPath;
+                // Try to make it relative to workspace if possible
+                let configPath = selectedPath;
+                if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
+                    const workspacePath = vscode.workspace.workspaceFolders[0].uri.fsPath;
+                    if (selectedPath.startsWith(workspacePath)) {
+                        configPath = path.relative(workspacePath, selectedPath);
+                    }
+                }
+
+                await vscode.workspace.getConfiguration('scpi').update('manualDirectory', configPath, vscode.ConfigurationTarget.Global);
+                
+                // 2. Enable Server
+                const enable = await vscode.window.showQuickPick(['Yes', 'No'], {
+                    placeHolder: 'Enable MCP Server now?',
+                    title: 'Enable SCPI MCP Server'
+                });
+
+                if (enable === 'Yes') {
+                    await vscode.workspace.getConfiguration('scpi').update('mcpServerEnabled', true, vscode.ConfigurationTarget.Global);
+                    vscode.window.showInformationMessage(`MCP Server configured and enabled. Manual directory: ${configPath}`);
+                } else {
+                    vscode.window.showInformationMessage(`MCP Server configured (but not enabled). Manual directory: ${configPath}`);
+                }
+            }
         })
     );
 }

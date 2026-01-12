@@ -49,6 +49,16 @@
           "type": "string",
           "default": "python",
           "description": "Path to the Python interpreter with pyvisa installed."
+        },
+        "scpi.manualDirectory": {
+          "type": "string",
+          "default": ".scpi",
+          "description": "Directory containing instrument SCPI manuals (Markdown files). Defaults to .scpi in the workspace root."
+        },
+        "scpi.mcpServerEnabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable the MCP server for AI assistant integration."
         }
       }
     },
@@ -125,6 +135,7 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.2",
     "tree-sitter-scpi": "latest",
     "web-tree-sitter": "^0.20.8"
   }
