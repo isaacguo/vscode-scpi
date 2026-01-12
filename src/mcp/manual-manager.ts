@@ -60,7 +60,9 @@ export class ManualManager {
                     }
 
                     const fileName = path.basename(file, '.md');
-                    const match = fileName.match(/^([A-Z0-9]+)_([A-Z0-9]+)$/i);
+                    // Match {MANUFACTURER}_{MODEL} or {MANUFACTURER}_{MODEL}_* format
+                    // This allows files like "Keysight_N6700.md" or "Keysight_N6700_SCPI_Commands.md"
+                    const match = fileName.match(/^([A-Z0-9]+)_([A-Z0-9]+)(?:_|$)/i);
                     
                     if (match) {
                         const manufacturer = match[1].toUpperCase();

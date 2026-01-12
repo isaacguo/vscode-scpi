@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as fs from 'fs';
 import { ParserService } from './parser';
 import { ScpiCompletionItemProvider } from './features/completion';
 import { ScpiDiagnostics } from './features/diagnostics';
@@ -9,6 +10,7 @@ import { ScpiNotebookSerializer } from './notebook/serializer';
 import { ScpiNotebookController } from './notebook/controller';
 import { ConnectionService } from './notebook/connection';
 import { McpServerManager } from './mcp/server-manager';
+import { McpConfigManager } from './mcp/mcp-config-manager';
 
 export async function activate(context: vscode.ExtensionContext) {
     console.log('SCPI extension is now active!');
@@ -121,7 +123,7 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand('scpi.setupMcpServer', async () => {
             // 1. Select Manual Directory
-            const currentDir = vscode.workspace.getConfiguration('scpi').get<string>('manualDirectory', '.scpi');
+            const currentDir = vscode.workspace.getConfiguration('scpi').get<string>('manualDirectory', '.scpi_doc');
             
             const selection = await vscode.window.showOpenDialog({
                 canSelectFiles: false,
@@ -152,9 +154,65 @@ export async function activate(context: vscode.ExtensionContext) {
 
                 if (enable === 'Yes') {
                     await vscode.workspace.getConfiguration('scpi').update('mcpServerEnabled', true, vscode.ConfigurationTarget.Global);
-                    vscode.window.showInformationMessage(`MCP Server configured and enabled. Manual directory: ${configPath}`);
+                    // MCP config file will be updated automatically by server manager
+                    vscode.window.showInformationMessage(`MCP Server configured and enabled. Manual directory: ${configPath}. AI assistant configuration updated automatically.`);
                 } else {
                     vscode.window.showInformationMessage(`MCP Server configured (but not enabled). Manual directory: ${configPath}`);
+                }
+            }
+        })
+    );
+
+    // Register Enable MCP Server Command
+    context.subscriptions.push(
+        vscode.commands.registerCommand('scpi.enableMcpServer', async () => {
+            await vscode.workspace.getConfiguration('scpi').update('mcpServerEnabled', true, vscode.ConfigurationTarget.Global);
+            
+            // The server manager will handle updating the MCP config file automatically
+            // via the configuration change listener
+            vscode.window.showInformationMessage('MCP Server enabled. AI assistant configuration updated automatically.');
+        })
+    );
+
+    // Register Disable MCP Server Command
+    context.subscriptions.push(
+        vscode.commands.registerCommand('scpi.disableMcpServer', async () => {
+            await vscode.workspace.getConfiguration('scpi').update('mcpServerEnabled', false, vscode.ConfigurationTarget.Global);
+            // MCP config file will be updated automatically by server manager
+            vscode.window.showInformationMessage('MCP Server disabled. AI assistant configuration updated automatically.');
+        })
+    );
+
+    // Register View MCP Config Command
+    context.subscriptions.push(
+        vscode.commands.registerCommand('scpi.viewMcpConfig', async () => {
+            const configManager = new McpConfigManager(context);
+            const configPaths = configManager.getAvailableConfigPaths();
+            
+            const selected = await vscode.window.showQuickPick(
+                configPaths.map(p => ({
+                    label: path.basename(p),
+                    description: p,
+                    detail: fs.existsSync(p) ? 'Exists' : 'Does not exist'
+                })),
+                {
+                    placeHolder: 'Select MCP config file to view',
+                    title: 'View MCP Configuration'
+                }
+            );
+
+            if (selected) {
+                const filePath = selected.description!;
+                try {
+                    if (fs.existsSync(filePath)) {
+                        const content = fs.readFileSync(filePath, 'utf-8');
+                        const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath));
+                        await vscode.window.showTextDocument(doc);
+                    } else {
+                        vscode.window.showInformationMessage(`Config file does not exist: ${filePath}\nIt will be created automatically when MCP server is enabled.`);
+                    }
+                } catch (err: any) {
+                    vscode.window.showErrorMessage(`Failed to open config file: ${err.message}`);
                 }
             }
         })

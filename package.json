@@ -52,13 +52,13 @@
         },
         "scpi.manualDirectory": {
           "type": "string",
-          "default": ".scpi",
-          "description": "Directory containing instrument SCPI manuals (Markdown files). Defaults to .scpi in the workspace root."
+          "default": ".scpi_doc",
+          "description": "Directory containing instrument SCPI manuals (Markdown files). Defaults to .scpi_doc in the workspace root."
         },
         "scpi.mcpServerEnabled": {
           "type": "boolean",
-          "default": false,
-          "description": "Enable the MCP server for AI assistant integration."
+          "default": true,
+          "description": "Enable the MCP server for AI assistant integration. Enabled by default on first installation."
         }
       }
     },
@@ -75,6 +75,26 @@
       {
         "command": "scpi.configurePythonEnvironment",
         "title": "Configure Python Environment",
+        "category": "SCPI"
+      },
+      {
+        "command": "scpi.setupMcpServer",
+        "title": "Setup MCP Server",
+        "category": "SCPI"
+      },
+      {
+        "command": "scpi.enableMcpServer",
+        "title": "Enable MCP Server",
+        "category": "SCPI"
+      },
+      {
+        "command": "scpi.disableMcpServer",
+        "title": "Disable MCP Server",
+        "category": "SCPI"
+      },
+      {
+        "command": "scpi.viewMcpConfig",
+        "title": "View MCP Configuration",
         "category": "SCPI"
       }
     ],
