@@ -9,7 +9,7 @@ interface RawNotebookCell {
 
 interface RawNotebook {
     cells: RawNotebookCell[];
-    metadata?: { [key: string]: any };
+    metadata?: { [key: string]: unknown };
 }
 
 export class ScpiNotebookSerializer implements vscode.NotebookSerializer {

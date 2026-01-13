@@ -1,10 +1,18 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import { spawn } from 'child_process';
+import { InstrumentIdentifier } from '../mcp/instrument-identifier';
 
 export interface ScpiConnectionConfig {
     resourceName: string;
     isSimulation?: boolean;
+    instrumentInfo?: {
+        manufacturer: string;
+        model: string;
+        serialNumber?: string;
+        firmwareVersion?: string;
+    };
 }
 
 export interface PythonEnvironmentConfig {
@@ -63,15 +71,126 @@ export class ConnectionService {
 
         if (resourceName !== undefined && resourceName.trim().length > 0) {
             const isSimulation = connectionType.label === 'Use Simulation';
+            
+            // Try to identify instrument via *IDN?
+            // Note: This requires running a python script to query *IDN?
+            // For now, we will clear any previous instrument info and let it be populated
+            // when the user first runs a cell or via a background check if possible.
+            // However, since we don't have a persistent connection process here (it's per cell execution),
+            // we might want to trigger an IDN query immediately if Python is set up.
+            
+            // But wait, the plan says "Update src/notebook/connection.ts to automatically identify instrument after connection".
+            // Since we don't have an active Python session here, we can't easily query *IDN? without spawning a process.
+            // Let's defer *IDN? query to the first execution or try to run a quick check if Python is configured.
+            
+            // Actually, we can try to use the ScpiNotebookController to run *IDN? if we can access it,
+            // but Controller logic is separate. 
+            // A better approach: After setting connection, we can try to spawn the python adapter script 
+            // just to query *IDN? if python environment is configured.
+            
+            let instrumentInfo = undefined;
+            
+            // We'll update the config first
             await this.updateConnectionConfig(notebook, { 
                 resourceName: resourceName.trim(),
                 isSimulation: isSimulation
             });
+
+            // Try to identify if we have python environment
+            const pythonEnv = this.getPythonEnvironment(notebook) || 
+                             vscode.workspace.getConfiguration('scpi').get<string>('pythonPath') ? 
+                             { path: vscode.workspace.getConfiguration('scpi').get<string>('pythonPath') || 'python' } : undefined;
+
+            if (pythonEnv && pythonEnv.path) {
+                try {
+                    const idnResponse = await this.queryIdn(pythonEnv.path, resourceName.trim(), isSimulation);
+                    const info = InstrumentIdentifier.parseIdnResponse(idnResponse);
+                    if (info) {
+                        instrumentInfo = info;
+                        // Update config again with instrument info
+                        await this.updateConnectionConfig(notebook, { 
+                            resourceName: resourceName.trim(),
+                            isSimulation: isSimulation,
+                            instrumentInfo: info
+                        });
+                        vscode.window.showInformationMessage(`Connected to: ${info.manufacturer} ${info.model}`);
+                    }
+                } catch (err) {
+                    console.warn('Failed to query *IDN?:', err);
+                    // Don't fail connection if IDN fails, just warn
+                }
+            }
+
             const displayName = isSimulation 
                 ? 'Simulation (ASRL1::INSTR)' 
                 : resourceName;
-            vscode.window.showInformationMessage(`Instrument connection set to: ${displayName}`);
+            
+            if (!instrumentInfo) {
+                vscode.window.showInformationMessage(`Instrument connection set to: ${displayName}`);
+            }
         }
+    }
+
+    private static async queryIdn(pythonPath: string, resourceName: string, isSimulation: boolean): Promise<string> {
+        return new Promise((resolve, reject) => {
+            // We need to locate the visa_adapter.py script
+            // This assumes we are running in the extension context context, but this is a static method.
+            // We might need to pass extension context or find path relative to this file.
+            // src/notebook/connection.ts -> src/notebook -> src -> root -> python/visa_adapter.py
+            // ../../../python/visa_adapter.py from source structure
+            // But at runtime: dist/extension.js location...
+            // Ideally we should use extensionContext.extensionPath but we don't have it here easily.
+            // However, ScpiNotebookController uses: path.join(this._context.extensionPath, 'python', 'visa_adapter.py')
+            
+            // Let's try to find it relative to __dirname. 
+            // In dev: src/notebook/connection.ts
+            // In prod: out/src/notebook/connection.js
+            
+            let scriptPath = path.resolve(__dirname, '../../../python/visa_adapter.py');
+            if (!fs.existsSync(scriptPath)) {
+                // Try production path
+                scriptPath = path.resolve(__dirname, '../../../../python/visa_adapter.py');
+            }
+            
+            // If still not found, we can't run
+            if (!fs.existsSync(scriptPath)) {
+                reject(new Error(`Adapter script not found at ${scriptPath}`));
+                return;
+            }
+
+            const args = [scriptPath, resourceName];
+            if (isSimulation) {
+                args.push('--sim');
+            }
+            
+            const process = spawn(pythonPath, args);
+            let stdout = '';
+            let stderr = '';
+
+            process.stdout.on('data', (data: Buffer) => {
+                stdout += data.toString();
+            });
+            
+            process.stderr.on('data', (data: Buffer) => {
+                stderr += data.toString();
+            });
+
+            process.on('close', (code: number) => {
+                if (code === 0) {
+                    resolve(stdout.trim());
+                } else {
+                    reject(new Error(stderr || `Process exited with code ${code}`));
+                }
+            });
+
+            process.on('error', (err: Error) => {
+                reject(err);
+            });
+
+            // Write *IDN? command
+            process.stdin.write('*IDN?\n');
+            process.stdin.end();
+        });
     }
 
     static getConnectionConfig(notebook: vscode.NotebookDocument): ScpiConnectionConfig | undefined {
@@ -335,7 +454,6 @@ export class ConnectionService {
 
     private static async getPythonVersion(pythonPath: string): Promise<string> {
         return new Promise((resolve) => {
-            const { spawn } = require('child_process');
             const process = spawn(pythonPath, ['--version']);
             
             let output = '';
