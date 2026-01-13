@@ -28,12 +28,13 @@ server.tool(
                     }
                 ]
             };
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
             return {
                 content: [
                     {
                         type: "text",
-                        text: `Error listing manuals: ${error.message}`
+                        text: `Error listing manuals: ${message}`
                     }
                 ],
                 isError: true
@@ -75,12 +76,13 @@ server.tool(
                     }
                 ]
             };
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
             return {
                 content: [
                     {
                         type: "text",
-                        text: `Error retrieving manual content: ${error.message}`
+                        text: `Error retrieving manual content: ${message}`
                     }
                 ],
                 isError: true

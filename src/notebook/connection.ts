@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import { spawn } from 'child_process';
 import { InstrumentIdentifier } from '../mcp/instrument-identifier';
 
 export interface ScpiConnectionConfig {
@@ -157,7 +158,6 @@ export class ConnectionService {
                 return;
             }
 
-            const { spawn } = require('child_process');
             const args = [scriptPath, resourceName];
             if (isSimulation) {
                 args.push('--sim');
@@ -454,7 +454,6 @@ export class ConnectionService {
 
     private static async getPythonVersion(pythonPath: string): Promise<string> {
         return new Promise((resolve) => {
-            const { spawn } = require('child_process');
             const process = spawn(pythonPath, ['--version']);
             
             let output = '';

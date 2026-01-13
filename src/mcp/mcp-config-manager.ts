@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as os from 'os';
 
 interface McpServerConfig {
     command: string;
@@ -9,77 +8,119 @@ interface McpServerConfig {
     env?: { [key: string]: string };
 }
 
-interface McpConfigFile {
+// VS Code uses "servers" as root key
+interface VscodeMcpConfigFile {
+    servers: {
+        [serverName: string]: McpServerConfig;
+    };
+}
+
+// Cursor uses "mcpServers" as root key
+interface CursorMcpConfigFile {
     mcpServers: {
         [serverName: string]: McpServerConfig;
     };
 }
 
+type IdeType = 'vscode' | 'cursor' | 'unknown';
+
 export class McpConfigManager {
-    private readonly configPaths: string[] = [];
+    private readonly workspaceConfigPath: string | null;
+    private readonly ideType: IdeType;
 
     constructor(private readonly context: vscode.ExtensionContext) {
-        // Detect common MCP config file locations
-        const homeDir = os.homedir();
-        const platform = process.platform;
-
-        // Cursor AI locations
-        this.configPaths.push(path.join(homeDir, '.cursor', 'mcp.json'));
-        this.configPaths.push(path.join(homeDir, '.config', 'cursor', 'mcp.json'));
-        
-        // VS Code Copilot locations (if applicable)
-        if (platform === 'darwin') {
-            this.configPaths.push(path.join(homeDir, 'Library', 'Application Support', 'Code', 'User', 'mcp.json'));
-        } else if (platform === 'win32') {
-            this.configPaths.push(path.join(homeDir, 'AppData', 'Roaming', 'Code', 'User', 'mcp.json'));
-        } else {
-            this.configPaths.push(path.join(homeDir, '.config', 'Code', 'User', 'mcp.json'));
-        }
-
-        // Claude Desktop locations
-        this.configPaths.push(path.join(homeDir, '.config', 'claude', 'mcp.json'));
+        // Detect current IDE
+        this.ideType = this.detectIde();
+        // Use workspace root for MCP config file
+        this.workspaceConfigPath = this.getWorkspaceConfigPath();
     }
 
     /**
-     * Get the first existing config file path, or the first default path if none exist
+     * Detect the current IDE (VS Code, Cursor, or unknown)
      */
-    private getConfigFilePath(): string | null {
-        // Check if any config file exists
-        for (const configPath of this.configPaths) {
-            if (fs.existsSync(configPath)) {
-                return configPath;
+    private detectIde(): IdeType {
+        const appName = vscode.env.appName.toLowerCase();
+        
+        // Check for Cursor
+        if (appName.includes('cursor')) {
+            return 'cursor';
+        }
+        
+        // Check for VS Code
+        if (appName.includes('visual studio code') || appName.includes('code')) {
+            return 'vscode';
+        }
+        
+        // Unknown IDE - default to Cursor format (more common)
+        return 'unknown';
+    }
+
+    /**
+     * Get the workspace MCP config file path
+     * Uses .vscode/mcp.json for VS Code and .cursor/mcp.json for Cursor
+     */
+    private getWorkspaceConfigPath(): string | null {
+        if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
+            const workspaceRoot = vscode.workspace.workspaceFolders[0].uri.fsPath;
+            
+            if (this.ideType === 'cursor') {
+                return path.join(workspaceRoot, '.cursor', 'mcp.json');
+            } else {
+                // VS Code or unknown - use .vscode
+                return path.join(workspaceRoot, '.vscode', 'mcp.json');
             }
         }
-
-        // If none exist, use the first path (Cursor AI default)
-        if (this.configPaths.length > 0) {
-            return this.configPaths[0];
-        }
-
         return null;
     }
 
     /**
-     * Read existing MCP config file
+     * Get the config file path (workspace first, fallback to null if no workspace)
      */
-    private readConfigFile(filePath: string): McpConfigFile {
+    private getConfigFilePath(): string | null {
+        return this.workspaceConfigPath;
+    }
+
+    /**
+     * Read existing MCP config file
+     * Supports both VS Code (servers) and Cursor (mcpServers) formats
+     */
+    private readConfigFile(filePath: string): VscodeMcpConfigFile | CursorMcpConfigFile {
         try {
             if (fs.existsSync(filePath)) {
                 const content = fs.readFileSync(filePath, 'utf-8');
-                return JSON.parse(content);
+                const parsed = JSON.parse(content);
+                
+                // Check which format is used
+                if ('servers' in parsed) {
+                    return parsed as VscodeMcpConfigFile;
+                } else if ('mcpServers' in parsed) {
+                    return parsed as CursorMcpConfigFile;
+                }
+                
+                // If neither format found, return default based on IDE
+                if (this.ideType === 'cursor') {
+                    return { mcpServers: {} };
+                } else {
+                    return { servers: {} };
+                }
             }
         } catch (error) {
             console.warn(`Failed to read MCP config file ${filePath}:`, error);
         }
 
-        // Return default structure
-        return { mcpServers: {} };
+        // Return default structure based on IDE
+        if (this.ideType === 'cursor') {
+            return { mcpServers: {} };
+        } else {
+            return { servers: {} };
+        }
     }
 
     /**
      * Write MCP config file
+     * Uses the appropriate format based on IDE type
      */
-    private writeConfigFile(filePath: string, config: McpConfigFile): boolean {
+    private writeConfigFile(filePath: string, config: VscodeMcpConfigFile | CursorMcpConfigFile): boolean {
         try {
             // Ensure directory exists
             const dir = path.dirname(filePath);
@@ -102,7 +143,6 @@ export class McpConfigManager {
      */
     private getNodePath(): string {
         // First, try to find node in common locations
-        const platform = process.platform;
         const commonPaths = [
             '/usr/local/bin/node',
             '/usr/bin/node',
@@ -170,6 +210,7 @@ export class McpConfigManager {
 
     /**
      * Add or update SCPI MCP server configuration
+     * Uses the appropriate schema based on IDE (VS Code uses "servers", Cursor uses "mcpServers")
      */
     public async updateConfig(enabled: boolean): Promise<{ success: boolean; filePath: string | null; message: string }> {
         const configPath = this.getConfigFilePath();
@@ -178,35 +219,81 @@ export class McpConfigManager {
             return {
                 success: false,
                 filePath: null,
-                message: 'Could not determine MCP config file location'
+                message: 'No workspace folder found. Please open a workspace folder to use MCP server configuration.'
             };
         }
 
         const config = this.readConfigFile(configPath);
+        const serverConfig = this.getServerConfig();
 
         if (enabled) {
-            // Add or update the server config
-            const serverConfig = this.getServerConfig();
-            config.mcpServers['scpi-manuals'] = serverConfig;
+            // Determine which format to use based on IDE type
+            // Priority: detected IDE type > existing file format
+            const useCursorFormat = this.ideType === 'cursor' || 
+                                   (this.ideType === 'unknown' && 'mcpServers' in config);
+            
+            if (useCursorFormat) {
+                // Cursor format
+                const cursorConfig: CursorMcpConfigFile = 'mcpServers' in config 
+                    ? (config as CursorMcpConfigFile)
+                    : { mcpServers: {} };
+                
+                if (!cursorConfig.mcpServers) {
+                    cursorConfig.mcpServers = {};
+                }
+                cursorConfig.mcpServers['scpi-manuals'] = serverConfig;
 
-            if (this.writeConfigFile(configPath, config)) {
-                return {
-                    success: true,
-                    filePath: configPath,
-                    message: `MCP server configuration added to ${configPath}`
-                };
+                if (this.writeConfigFile(configPath, cursorConfig)) {
+                    return {
+                        success: true,
+                        filePath: configPath,
+                        message: `MCP server configuration added to ${configPath}`
+                    };
+                } else {
+                    return {
+                        success: false,
+                        filePath: configPath,
+                        message: `Failed to write MCP config file at ${configPath}`
+                    };
+                }
             } else {
-                return {
-                    success: false,
-                    filePath: configPath,
-                    message: `Failed to write MCP config file at ${configPath}`
-                };
+                // VS Code format
+                const vscodeConfig: VscodeMcpConfigFile = 'servers' in config
+                    ? (config as VscodeMcpConfigFile)
+                    : { servers: {} };
+                
+                if (!vscodeConfig.servers) {
+                    vscodeConfig.servers = {};
+                }
+                vscodeConfig.servers['scpi-manuals'] = serverConfig;
+
+                if (this.writeConfigFile(configPath, vscodeConfig)) {
+                    return {
+                        success: true,
+                        filePath: configPath,
+                        message: `MCP server configuration added to ${configPath}`
+                    };
+                } else {
+                    return {
+                        success: false,
+                        filePath: configPath,
+                        message: `Failed to write MCP config file at ${configPath}`
+                    };
+                }
             }
         } else {
             // Remove the server config if it exists
-            if (config.mcpServers['scpi-manuals']) {
+            let removed = false;
+            
+            if ('mcpServers' in config && config.mcpServers['scpi-manuals']) {
                 delete config.mcpServers['scpi-manuals'];
-                
+                removed = true;
+            } else if ('servers' in config && config.servers['scpi-manuals']) {
+                delete config.servers['scpi-manuals'];
+                removed = true;
+            }
+            
+            if (removed) {
                 if (this.writeConfigFile(configPath, config)) {
                     return {
                         success: true,
@@ -234,13 +321,19 @@ export class McpConfigManager {
      * Get list of available config file paths
      */
     public getAvailableConfigPaths(): string[] {
-        return this.configPaths;
+        if (this.workspaceConfigPath) {
+            return [this.workspaceConfigPath];
+        }
+        return [];
     }
 
     /**
      * Check if config file exists
      */
     public hasConfigFile(): boolean {
-        return this.configPaths.some(p => fs.existsSync(p));
+        if (this.workspaceConfigPath) {
+            return fs.existsSync(this.workspaceConfigPath);
+        }
+        return false;
     }
 }

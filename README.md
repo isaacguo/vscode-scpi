@@ -3,6 +3,9 @@
 A comprehensive development and execution environment for SCPI (Standard Commands for Programmable Instruments) in VS Code.
 
 ## Features
+### v0.0.2 Demo
+In context document query
+![ v0.0.2 Demo ](assets/v0.0.2.gif)
 
 ![ Demo ](assets/scpi.gif)
 
@@ -111,14 +114,73 @@ Instrument manuals should be in Markdown format. The server extracts description
 Example manual structure:
 ```markdown
 ---
-description: Low-Profile Modular Power Supply
+Description: Keysight Series N6700 Low-Profile Modular Power System
+Manufacturer: Keysight
+Model: N6700
 ---
 
-# Keysight N6700 SCPI Commands
+# Keysight N6700 SCPI Command Reference
 
-This manual contains SCPI commands for the Keysight N6700 power supply.
+## ABORt:ACQuire
 
-## DC Voltage Measurement
+### Command Syntax
+'''
+ABORt:ACQuire (@<chanlist>)
+'''
+
+### Description
+This command cancels any triggered measurements and returns the
+trigger system back to the Idle state. It also resets the WTG-meas bit in
+the Condition Status register.
+
+### Parameters
+Type
+Range of Values
+Default Value
+<chanlist>
+Numeric
+One or more channels.
+(@2) - channel 2
+(@1,4) - channels 1 and 4
+(@1:3) - channels 1 through 3.
+Required
+parameter
+
+### Remarks
+ABORt:ACQuire is also executed at power-on and upon execution of the
+*RST command.
+
+### Example
+'''
+ABOR:ACQ (@1)
+'''
+
+---
+
+## ABORt:ELOG
+
+### Command Syntax
+'''
+ABORt:ELOG (@<chanlist>)
+'''
+
+### Description
+This command stops the external data log and returns the trigger system
+back to the Idle state.
+
+### Parameters
+Type
+Range of Values
+Default Value
+<chanlist>
+Numeric
+One or more channels.
+(@2) - channel 2
+(@1,4) - channels 1 and 4
+(@1:3) - channels 1 through 3.
+Required
+parameter
+
 ...
 ```
 
@@ -136,6 +198,8 @@ This manual contains SCPI commands for the Keysight N6700 power supply.
 - Reorganized icons into assets folder
 - Improved README with comprehensive feature list
 - Initial release of SCPI Notebook extension
+
+### 0.0.2
 - **MCP Server Integration**: Added Model Context Protocol (MCP) server for AI assistant integration
   - Automatically provides instrument SCPI manuals to AI assistants
   - Supports manual indexing with lightweight metadata storage

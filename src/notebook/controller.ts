@@ -98,10 +98,11 @@ export class ScpiNotebookController {
                 ])
             ]);
             execution.end(true, Date.now());
-        } catch (err: any) {
+        } catch (err: unknown) {
+            const error = err instanceof Error ? err : new Error(String(err));
             execution.replaceOutput([
                 new vscode.NotebookCellOutput([
-                    vscode.NotebookCellOutputItem.error(err)
+                    vscode.NotebookCellOutputItem.error(error)
                 ])
             ]);
             execution.end(false, Date.now());

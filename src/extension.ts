@@ -54,12 +54,13 @@ export async function activate(context: vscode.ExtensionContext) {
                          return;
                      }
                  }
-                 try {
-                     await ConnectionService.configureConnection(notebook);
-                 } catch (err: any) {
-                     console.error('Error in configureConnection:', err);
-                     vscode.window.showErrorMessage(`Failed to configure instrument connection: ${err}`);
-                 }
+                try {
+                    await ConnectionService.configureConnection(notebook);
+                } catch (err: unknown) {
+                    console.error('Error in configureConnection:', err);
+                    const message = err instanceof Error ? err.message : String(err);
+                    vscode.window.showErrorMessage(`Failed to configure instrument connection: ${message}`);
+                }
              } else {
                  vscode.window.showErrorMessage('No active SCPI notebook found.');
              }
@@ -79,9 +80,10 @@ export async function activate(context: vscode.ExtensionContext) {
              if (notebook) {
                  try {
                      await ConnectionService.configurePythonEnvironment(notebook);
-                 } catch (err: any) {
+                 } catch (err: unknown) {
                      console.error('Error in configurePythonEnvironment:', err);
-                     vscode.window.showErrorMessage(`Failed to configure Python environment: ${err}`);
+                     const message = err instanceof Error ? err.message : String(err);
+                     vscode.window.showErrorMessage(`Failed to configure Python environment: ${message}`);
                  }
              } else {
                  vscode.window.showErrorMessage('No active SCPI notebook found.');
@@ -123,8 +125,6 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand('scpi.setupMcpServer', async () => {
             // 1. Select Manual Directory
-            const currentDir = vscode.workspace.getConfiguration('scpi').get<string>('manualDirectory', '.scpi_doc');
-            
             const selection = await vscode.window.showOpenDialog({
                 canSelectFiles: false,
                 canSelectFolders: true,
@@ -205,14 +205,14 @@ export async function activate(context: vscode.ExtensionContext) {
                 const filePath = selected.description!;
                 try {
                     if (fs.existsSync(filePath)) {
-                        const content = fs.readFileSync(filePath, 'utf-8');
                         const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath));
                         await vscode.window.showTextDocument(doc);
                     } else {
                         vscode.window.showInformationMessage(`Config file does not exist: ${filePath}\nIt will be created automatically when MCP server is enabled.`);
                     }
-                } catch (err: any) {
-                    vscode.window.showErrorMessage(`Failed to open config file: ${err.message}`);
+                } catch (err: unknown) {
+                    const message = err instanceof Error ? err.message : String(err);
+                    vscode.window.showErrorMessage(`Failed to open config file: ${message}`);
                 }
             }
         })

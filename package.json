@@ -2,7 +2,7 @@
   "name": "vscode-scpi",
   "displayName": "SCPI Notebook",
   "description": "A notebook development and execution environment for SCPI (Standard Commands for Programmable Instruments)",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "isaacguo",
   "icon": "assets/icon.png",
   "repository": {
